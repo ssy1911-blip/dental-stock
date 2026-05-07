@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20260507_150156 -->
+<!-- v20260507_152205 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -26,29 +26,48 @@
       window._db = db;
       window._clinicId = clinicId;
 
+      let _invLoaded = false;
+      let _ordLoaded = false;
+
+      function _trySyncOrders() {
+        if (_invLoaded && _ordLoaded) {
+          if (typeof autoSyncOrders === 'function') autoSyncOrders();
+        }
+      }
+
       // 실시간 재고 동기화
       onSnapshot(doc(db, 'clinics', clinicId, 'data', 'inventory'), (snap) => {
         if (!snap.exists()) return;
         const data = snap.data();
         if (!data.items) return;
-        // 전역 items 배열 직접 교체
         items.length = 0;
         data.items.forEach(i => items.push(i));
         if (typeof renderFilters === 'function') renderFilters();
         if (typeof renderTable === 'function') renderTable();
-        if (typeof autoSyncOrders === 'function') autoSyncOrders();
         if (typeof markSaved === 'function') markSaved();
+        _invLoaded = true;
+        _trySyncOrders();
       });
 
       // 실시간 주문 동기화
       onSnapshot(doc(db, 'clinics', clinicId, 'data', 'orders'), (snap) => {
-        if (!snap.exists()) return;
+        if (!snap.exists()) {
+          _ordLoaded = true;
+          _trySyncOrders();
+          return;
+        }
         const data = snap.data();
-        if (!data.orders) return;
+        if (!data.orders) {
+          _ordLoaded = true;
+          _trySyncOrders();
+          return;
+        }
         orders.length = 0;
         data.orders.forEach(o => orders.push(o));
         if (typeof renderOrderCards === 'function') renderOrderCards();
         if (typeof markSaved === 'function') markSaved();
+        _ordLoaded = true;
+        _trySyncOrders();
       });
 
       window._fbReady = true;
@@ -2473,7 +2492,7 @@ loadData();
 updateHeader();
 renderFilters();
 renderTable();
-setTimeout(() => autoSyncOrders(), 1000);
+setTimeout(() => autoSyncOrders(), 3000);
 </script>
 </body>
 </html>
