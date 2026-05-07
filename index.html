@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20260507_154528 -->
+<!-- v20260507_155904 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -1027,7 +1027,20 @@
 
     <div class="order-month-header">
       <h2 id="orderMonthTitle">📋 이번 달 주문 관리</h2>
-      <button class="btn btn-outline" style="font-size:12px" onclick="clearDelivered()">✅ 배송완료 정리</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-outline" style="font-size:12px" onclick="clearDelivered()">✅ 배송완료 정리</button>
+        <button class="btn btn-danger" style="font-size:12px" onclick="deleteSelected()">🗑️ 선택 삭제</button>
+        <button class="btn btn-outline" style="font-size:12px" onclick="deleteAllFiltered()">⚠️ 현재목록 전체삭제</button>
+      </div>
+    </div>
+
+    <!-- 전체선택 바 -->
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600">
+        <input type="checkbox" id="selectAllOrders" onchange="toggleSelectAll(this.checked)" style="width:16px;height:16px;cursor:pointer">
+        전체 선택
+      </label>
+      <span id="selectedCount" style="font-size:12px;color:var(--text3)">0개 선택됨</span>
     </div>
 
     <!-- 통계 -->
@@ -2260,6 +2273,46 @@ function updateOrderStatus(id, newStatus) {
   if (newStatus === 'ordered') showToast(`🚚 주문 완료 처리됐습니다`);
 }
 
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = checked);
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const checked = document.querySelectorAll('.order-checkbox:checked').length;
+  const total = document.querySelectorAll('.order-checkbox').length;
+  const countEl = document.getElementById('selectedCount');
+  const selectAll = document.getElementById('selectAllOrders');
+  if (countEl) countEl.textContent = `${checked}개 선택됨`;
+  if (selectAll) selectAll.checked = checked === total && total > 0;
+}
+
+function deleteSelected() {
+  const checkedIds = [...document.querySelectorAll('.order-checkbox:checked')]
+    .map(cb => Number(cb.dataset.id));
+  if (checkedIds.length === 0) { showToast('선택된 항목이 없습니다'); return; }
+  if (!confirm(`선택한 ${checkedIds.length}개 항목을 삭제할까요?`)) return;
+  orders = orders.filter(o => !checkedIds.includes(o.id));
+  saveOrders();
+  renderOrderPage();
+  showToast(`🗑️ ${checkedIds.length}개 삭제됐습니다`);
+}
+
+function deleteAllFiltered() {
+  const mk = getMonthKey();
+  let filteredOrders = getCurrentMonthOrders().filter(o => !o.archived);
+  if (currentOrderFilter !== 'all') {
+    filteredOrders = filteredOrders.filter(o => o.status === currentOrderFilter);
+  }
+  if (filteredOrders.length === 0) { showToast('삭제할 항목이 없습니다'); return; }
+  if (!confirm(`현재 목록의 ${filteredOrders.length}개 항목을 전체 삭제할까요?`)) return;
+  const filteredIds = filteredOrders.map(o => o.id);
+  orders = orders.filter(o => !filteredIds.includes(o.id));
+  saveOrders();
+  renderOrderPage();
+  showToast(`🗑️ ${filteredIds.length}개 전체 삭제됐습니다`);
+}
+
 function deleteOrder(id) {
   orders = orders.filter(o => o.id !== id);
   saveOrders();
@@ -2347,8 +2400,10 @@ function renderOrderCards() {
   const checkClass = { pending:'', ordered:'ordered', delivered:'delivered' };
 
   container.innerHTML = filtered.map(o => `
-    <div class="order-card ${cardClass[o.status]}">
+    <div class="order-card ${cardClass[o.status]}" id="ocard-${o.id}">
       <div class="order-card-header">
+        <input type="checkbox" class="order-checkbox" data-id="${o.id}" onchange="updateSelectedCount()"
+          style="width:16px;height:16px;cursor:pointer;flex-shrink:0;margin-top:3px">
         <div class="order-card-check ${checkClass[o.status]}" onclick="cycleStatus(${o.id})">${checkIcon[o.status]}</div>
         <div class="order-card-info">
           <div class="order-card-name ${o.status === 'delivered' ? 'delivered' : ''}">${o.name}</div>
