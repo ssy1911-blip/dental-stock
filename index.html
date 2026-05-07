@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20260507_153321 -->
+<!-- v20260507_154528 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -156,12 +156,12 @@
   .toolbar {
     background: white;
     border-bottom: 1px solid var(--border);
-    padding: 10px 16px;
+    padding: 8px 16px;
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
     align-items: center;
-    position: sticky; top: 56px; z-index: 90;
+    position: sticky; top: 100px; z-index: 90;
   }
   .toolbar input[type=text] {
     flex: 1; min-width: 140px;
@@ -936,13 +936,14 @@
     <option value="low">주문 필요</option>
     <option value="ok">재고 충분</option>
   </select>
-  <button class="btn btn-outline" onclick="openResetModal()">📅 월초 재고 입력</button>
-  <button class="btn btn-outline" onclick="autoSyncOrders()" title="재고없음/주문필요 품목을 주문 예정에 동기화">🔄 주문 동기화</button>
-  <button class="btn btn-success" onclick="downloadExcel()">📥 CSV 내보내기</button>
-  <button class="btn btn-outline" onclick="document.getElementById('csvImportInput').click()">📂 CSV 불러오기</button>
+  <button class="btn btn-outline" onclick="openResetModal()">📅 월초입력</button>
+  <button class="btn btn-outline" onclick="autoSyncOrders()">🔄 주문동기화</button>
+  <button class="btn btn-success" onclick="downloadExcel()">📥 CSV</button>
+  <button class="btn btn-outline" onclick="document.getElementById('csvImportInput').click()">📂 불러오기</button>
   <input type="file" id="csvImportInput" accept=".csv" style="display:none" onchange="importCSV(event)">
-  <button class="btn btn-primary" onclick="switchTab('orders')">🛒 주문 관리</button>
-  <button class="btn btn-save" id="saveBtn" onclick="manualSave()">💾 전체 저장</button>
+  <button class="btn btn-primary" onclick="switchTab('orders')">🛒 주문관리</button>
+  <button class="btn btn-save" id="saveBtn" onclick="manualSave()">💾 저장</button>
+  <span class="save-status" id="saveStatus">✅ 저장됨</span>
   <span class="save-status" id="saveStatus">✅ 저장됨</span>
 </div>
 
