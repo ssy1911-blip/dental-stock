@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20260507_152205 -->
+<!-- v20260507_153321 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -937,6 +937,7 @@
     <option value="ok">재고 충분</option>
   </select>
   <button class="btn btn-outline" onclick="openResetModal()">📅 월초 재고 입력</button>
+  <button class="btn btn-outline" onclick="autoSyncOrders()" title="재고없음/주문필요 품목을 주문 예정에 동기화">🔄 주문 동기화</button>
   <button class="btn btn-success" onclick="downloadExcel()">📥 CSV 내보내기</button>
   <button class="btn btn-outline" onclick="document.getElementById('csvImportInput').click()">📂 CSV 불러오기</button>
   <input type="file" id="csvImportInput" accept=".csv" style="display:none" onchange="importCSV(event)">
@@ -1688,27 +1689,50 @@ function setStatusFilter(status) {
 }
 
 function autoSyncOrders() {
-  // 현재 재고없음/주문필요 품목 중 이번달 주문예정에 없는 것 자동 추가
+  let added = 0;
   items.forEach(item => {
     const st = getStatus(item);
     if (st === 'low' || st === 'empty') {
-      autoAddToOrders(item);
+      const mk = getMonthKey();
+      // 이미 주문 예정에 있는지 확인 (상태 무관)
+      const exists = orders.some(o =>
+        o.month === mk && o.name === item.name && o.status === 'pending' && !o.archived
+      );
+      if (!exists) {
+        const noteLabel = st === 'empty' ? '🚨 재고없음' : '⚡ 주문필요';
+        orders.push({
+          id: Date.now() + Math.random(),
+          name: item.name,
+          qty: 1,
+          supplier: '',
+          status: 'pending',
+          note: noteLabel,
+          month: mk,
+          orderedAt: null,
+          deliveredAt: null,
+        });
+        added++;
+      }
     }
   });
+  if (added > 0) {
+    saveOrders();
+    if (typeof renderOrderCards === 'function') renderOrderCards();
+    showToast(`✅ 주문 예정 ${added}개 자동 추가됐습니다`);
+  }
 }
 
 function autoAddToOrders(item) {
   const mk = getMonthKey();
   const st = getStatus(item);
-
-  // 이미 같은 상태로 주문 예정에 있는지 확인
   const noteLabel = st === 'empty' ? '🚨 재고없음' : '⚡ 주문필요';
+
+  // 이미 주문 예정에 있는지 확인
   const exists = orders.some(o =>
-    o.month === mk && o.name === item.name && o.status === 'pending' && !o.archived && o.note === noteLabel
+    o.month === mk && o.name === item.name && o.status === 'pending' && !o.archived
   );
   if (exists) return;
 
-  // 주문 예정으로 자동 추가
   orders.push({
     id: Date.now() + Math.random(),
     name: item.name,
@@ -1722,14 +1746,15 @@ function autoAddToOrders(item) {
   });
   saveOrders();
 
-  // 배지 업데이트
   const badge = document.getElementById('orderBadge');
   const mobileBadge = document.getElementById('mobileOrderBadge');
   const cnt = orders.filter(o => o.month === mk && !o.archived && o.status === 'pending').length;
   if (badge) { badge.textContent = cnt; badge.style.display = 'inline'; }
   if (mobileBadge) { mobileBadge.textContent = cnt; mobileBadge.style.display = 'inline'; }
 
-  const msg = st === 'empty' ? `🚨 ${item.name.substring(0,16)} — 재고없음! 주문 예정 추가` : `⚠️ ${item.name.substring(0,16)} — 주문 필요! 주문 예정 추가`;
+  const msg = st === 'empty'
+    ? `🚨 ${item.name.substring(0,16)} — 재고없음! 주문 예정 추가`
+    : `⚠️ ${item.name.substring(0,16)} — 주문 필요! 주문 예정 추가`;
   showToast(msg);
 }
 
