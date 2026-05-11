@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20260507_155904 -->
+<!-- v20260511_131140 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -1708,9 +1708,10 @@ function autoSyncOrders() {
     const st = getStatus(item);
     if (st === 'low' || st === 'empty') {
       const mk = getMonthKey();
-      // 이미 주문 예정에 있는지 확인 (상태 무관)
+      // 이미 주문 예정/완료/배송완료 중 하나라도 있으면 추가 안 함
       const exists = orders.some(o =>
-        o.month === mk && o.name === item.name && o.status === 'pending' && !o.archived
+        o.month === mk && o.name === item.name && !o.archived &&
+        (o.status === 'pending' || o.status === 'ordered' || o.status === 'delivered')
       );
       if (!exists) {
         const noteLabel = st === 'empty' ? '🚨 재고없음' : '⚡ 주문필요';
@@ -1739,14 +1740,15 @@ function autoSyncOrders() {
 function autoAddToOrders(item) {
   const mk = getMonthKey();
   const st = getStatus(item);
-  const noteLabel = st === 'empty' ? '🚨 재고없음' : '⚡ 주문필요';
 
-  // 이미 주문 예정에 있는지 확인
+  // 이미 주문 예정/완료/배송완료 중 하나라도 있으면 추가 안 함
   const exists = orders.some(o =>
-    o.month === mk && o.name === item.name && o.status === 'pending' && !o.archived
+    o.month === mk && o.name === item.name && !o.archived &&
+    (o.status === 'pending' || o.status === 'ordered' || o.status === 'delivered')
   );
   if (exists) return;
 
+  const noteLabel = st === 'empty' ? '🚨 재고없음' : '⚡ 주문필요';
   orders.push({
     id: Date.now() + Math.random(),
     name: item.name,
