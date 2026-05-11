@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20260511_131140 -->
+<!-- v20260511_131443 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -28,9 +28,11 @@
 
       let _invLoaded = false;
       let _ordLoaded = false;
+      let _syncDone = false;
 
       function _trySyncOrders() {
-        if (_invLoaded && _ordLoaded) {
+        if (_invLoaded && _ordLoaded && !_syncDone) {
+          _syncDone = true;
           if (typeof autoSyncOrders === 'function') autoSyncOrders();
         }
       }
@@ -2575,7 +2577,6 @@ loadData();
 updateHeader();
 renderFilters();
 renderTable();
-setTimeout(() => autoSyncOrders(), 3000);
 </script>
 </body>
 </html>
